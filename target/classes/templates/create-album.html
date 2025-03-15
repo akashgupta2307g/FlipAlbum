@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create New Album</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .create-album-container {
+            background: rgba(40, 40, 40, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #fff;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #8B4513;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+        }
+
+        .form-label {
+            color: #ccc;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            border-color: #8B4513;
+            background: rgba(139, 69, 19, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #8B4513;
+            margin-bottom: 1rem;
+        }
+
+        .selected-files {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-preview i {
+            margin-right: 10px;
+            color: #8B4513;
+        }
+
+        .btn-create {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-create:hover {
+            background: #A0522D;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .help-text {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="create-album-container">
+        <h2 class="form-title">Create New Album</h2>
+        
+        <form th:action="@{/album/create}" method="post" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label for="title" class="form-label">Album Title</label>
+                <input type="text" class="form-control" id="title" name="title" required
+                       placeholder="Enter album title">
+            </div>
+            
+            <div class="mb-4">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"
+                          placeholder="Enter album description"></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Photos</label>
+                <div class="upload-area" onclick="document.getElementById('photos').click()">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h5>Drop your photos here</h5>
+                    <p class="text-muted">or click to browse</p>
+                    <input type="file" id="photos" name="photos" multiple accept="image/*" 
+                           style="display: none" onchange="handleFileSelect(this)">
+                </div>
+                <p class="help-text">Maximum total size: 50MB</p>
+                
+                <div id="selectedFiles" class="selected-files">
+                    <!-- File previews will be added here -->
+                </div>
+            </div>
+            
+            <div class="buttons-container">
+                <a href="/dashboard" class="btn btn-back">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </a>
+                <button type="submit" class="btn btn-create">
+                    <i class="fas fa-plus me-2"></i> Create Album
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function handleFileSelect(input) {
+            const selectedFiles = document.getElementById('selectedFiles');
+            selectedFiles.innerHTML = '';
+            selectedFiles.style.display = 'block';
+            
+            let totalSize = 0;
+            const files = Array.from(input.files);
+            
+            files.forEach(file => {
+                totalSize += file.size;
+                const filePreview = document.createElement('div');
+                filePreview.className = 'file-preview';
+                filePreview.innerHTML = `
+                    <i class="fas fa-image"></i>
+                    <span>${file.name}</span>
+                    <small class="ms-auto">${(file.size / (1024 * 1024)).toFixed(2)} MB</small>
+                `;
+                selectedFiles.appendChild(filePreview);
+            });
+            
+            if (totalSize > 50 * 1024 * 1024) {
+                alert('Total file size exceeds 50MB limit!');
+                input.value = '';
+                selectedFiles.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

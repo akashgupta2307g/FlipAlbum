@@ -1,0 +1,12 @@
+com\photoalbum\service\AlbumService.class
+com\photoalbum\repository\UserRepository.class
+com\photoalbum\repository\AlbumRepository.class
+com\photoalbum\controller\AlbumController.class
+com\photoalbum\security\CustomUserDetails.class
+com\photoalbum\model\Album.class
+com\photoalbum\model\Photo.class
+com\photoalbum\controller\UserController.class
+com\photoalbum\service\CustomUserDetailsService.class
+com\photoalbum\model\User.class
+com\photoalbum\service\UserService.class
+com\photoalbum\PhotoAlbumApplication.class

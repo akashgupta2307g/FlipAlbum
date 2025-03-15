@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${album.title}">Album Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+
+        #flipbook-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw;
+            height: 80vh;
+        }
+
+        #flipbook {
+            margin: 0 auto;
+        }
+
+        .page {
+            background: #fff;
+        }
+
+        .page img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .hard {
+            background: linear-gradient(to right, #8B4513, #A0522D) !important;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .cover-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            text-align: center;
+        }
+
+        .cover-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .cover-date {
+            font-size: 1.5em;
+            color: #fff;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-nav {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Arial, sans-serif;
+        }
+
+        .btn-nav:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .side-controls {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-side {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-side:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <h2 th:text="${album.title}">Album Title</h2>
+        <p th:text="${#temporals.format(album.createdAt, 'EEEE dd/MM/yyyy')}">Date</p>
+    </div>
+
+    <div id="flipbook-container">
+        <div id="flipbook">
+            <!-- Front Cover -->
+            <div class="hard">
+                <div class="cover-content">
+                    <h1 class="cover-title" th:text="${album.title}">Album Title</h1>
+                    <p class="cover-date" th:text="${#temporals.format(album.createdAt, 'dd MMMM yyyy')}">Date</p>
+                </div>
+            </div>
+
+            <!-- Photos -->
+            <div th:each="photo : ${album.photos}" class="page">
+                <img th:src="@{${'/uploads/' + photo.fileName}}" th:alt="${photo.fileName}">
+            </div>
+
+            <!-- Back Cover -->
+            <div class="hard">
+                <div class="cover-content">
+                    <p class="cover-title">The End</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-nav" id="prev">Previous</button>
+        <button class="btn-nav" id="next">Next</button>
+    </div>
+
+    <div class="side-controls">
+        <button class="btn-side" id="zoomIn">+</button>
+        <button class="btn-side" id="zoomOut">-</button>
+        <button class="btn-side" id="fullscreen">⛶</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Calculate size based on container
+            const container = $('#flipbook-container');
+            const width = container.width();
+            const height = container.height();
+            let zoom = 1;
+
+            // Initialize flipbook
+            $('#flipbook').turn({
+                width: width * 0.9,
+                height: height * 0.9,
+                elevation: 50,
+                gradients: true,
+                autoCenter: true,
+                acceleration: true,
+                duration: 1500,
+                display: 'double',
+                when: {
+                    turning: function(e, page, view) {
+                        const book = $(this);
+                        
+                        // Disable buttons at ends
+                        $('#prev').prop('disabled', page === 1);
+                        $('#next').prop('disabled', page === book.turn('pages'));
+                    }
+                }
+            });
+
+            // Navigation
+            $('#prev').click(() => $('#flipbook').turn('previous'));
+            $('#next').click(() => $('#flipbook').turn('next'));
+
+            // Keyboard navigation
+            $(document).keydown(function(e) {
+                if (e.keyCode === 37) $('#flipbook').turn('previous');
+                if (e.keyCode === 39) $('#flipbook').turn('next');
+            });
+
+            // Zoom controls
+            $('#zoomIn').click(() => {
+                if (zoom < 2) {
+                    zoom += 0.2;
+                    $('#flipbook').css('transform', `scale(${zoom})`);
+                }
+            });
+
+            $('#zoomOut').click(() => {
+                if (zoom > 0.5) {
+                    zoom -= 0.2;
+                    $('#flipbook').css('transform', `scale(${zoom})`);
+                }
+            });
+
+            // Fullscreen
+            $('#fullscreen').click(() => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // Handle window resize
+            $(window).resize(function() {
+                const width = container.width();
+                const height = container.height();
+                $('#flipbook').turn('size', width * 0.9, height * 0.9);
+            });
+
+            // Initial button state
+            $('#prev').prop('disabled', true);
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1 @@
+web: java -jar target/virtual-photo-album-1.0.0.jar 
