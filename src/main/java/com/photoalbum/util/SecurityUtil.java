@@ -1,3 +1,5 @@
+package com.photoalbum.util;
+
 public class SecurityUtil {
     
     public static String sanitizeInput(String input) {

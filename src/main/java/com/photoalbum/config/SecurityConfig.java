@@ -23,20 +23,26 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+            .requiresChannel()
+                .requestMatchers(r -> r.getHeader("X-Forwarded-Proto") != null)
+                .requiresSecure()
+                .and()
             .authorizeRequests()
                 .antMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
             .formLogin()
                 .loginPage("/login")
-                .usernameParameter("username")
-                .passwordParameter("password")
                 .defaultSuccessUrl("/dashboard")
                 .permitAll()
                 .and()
-            .logout()
-                .logoutSuccessUrl("/")
-                .permitAll();
+            .rememberMe()
+                .key("uniqueAndSecret")
+                .tokenValiditySeconds(86400)
+                .and()
+            .headers()
+                .frameOptions()
+                .sameOrigin();
     }
 
     @Override
