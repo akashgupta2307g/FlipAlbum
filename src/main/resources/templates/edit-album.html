@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Album</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Album</h1>
+        <form th:action="@{/album/edit/{id}(id=${album.id})}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" th:value="${album.title}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" th:text="${album.description}"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="photos">Add More Photos:</label>
+                <input type="file" id="photos" name="photos" multiple accept="image/*">
+            </div>
+
+            <!-- Display existing photos -->
+            <div class="existing-photos">
+                <h3>Current Photos:</h3>
+                <div class="photo-grid">
+                    <div th:each="photo : ${album.photos}" class="photo-item">
+                        <img th:src="@{'/uploads/' + ${photo.filePath}}" alt="Album photo">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Update Album</button>
+            <a th:href="@{/dashboard}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

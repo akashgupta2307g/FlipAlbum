@@ -151,7 +151,7 @@
 
             <!-- Photos -->
             <div th:each="photo : ${album.photos}" class="page">
-                <img th:src="@{${'/uploads/' + photo.fileName}}" th:alt="${photo.fileName}">
+                <img th:src="@{'/uploads/' + ${photo.filePath}}" th:alt="${photo.originalFileName}">
             </div>
 
             <!-- Back Cover -->

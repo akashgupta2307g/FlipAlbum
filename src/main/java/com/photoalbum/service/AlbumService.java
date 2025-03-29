@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import com.photoalbum.service.EncryptionService;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AlbumService {
@@ -73,8 +74,8 @@ public class AlbumService {
                     Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
                     
                     Photo photo = new Photo();
-                    photo.setFileName(fileName);
-                    photo.setFilePath(path.toString());
+                    photo.setFilePath(fileName);
+                    photo.setOriginalFileName(file.getOriginalFilename());
                     album.addPhoto(photo);
                     
                     log.debug("Added photo to album: {}", fileName);
@@ -114,23 +115,33 @@ public class AlbumService {
                 .sum();
     }
 
-    public void savePhoto(MultipartFile file, Album album) throws Exception {
-        // Encrypt file data before saving
-        byte[] encryptedData = encryptionService.encryptFile(file.getBytes());
-        
-        // Generate secure filename
-        String secureFileName = generateSecureFileName(file.getOriginalFilename());
-        
-        // Save encrypted data
-        Path path = Paths.get(uploadPath + secureFileName);
-        Files.write(path, encryptedData);
-        
-        // Save photo metadata
-        Photo photo = new Photo();
-        photo.setFileName(secureFileName);
-        photo.setOriginalName(file.getOriginalFilename());
-        photo.setAlbum(album);
-        photoRepository.save(photo);
+    public void savePhoto(MultipartFile file, Album album) {
+        try {
+            // Create uploads directory if it doesn't exist
+            File uploadDir = new File(uploadPath);
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+
+            // Generate unique filename
+            String uniqueFileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            
+            // Save file
+            Path path = Paths.get(uploadPath + File.separator + uniqueFileName);
+            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+            // Save to database with correct path
+            Photo photo = new Photo();
+            photo.setFileName(uniqueFileName);  // Just the filename
+            photo.setFilePath(uniqueFileName);  // Just the filename
+            photo.setFileType(file.getContentType());
+            photo.setSize(file.getSize());
+            photo.setOriginalFileName(file.getOriginalFilename());
+            photo.setAlbum(album);
+            photoRepository.save(photo);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not store file " + file.getOriginalFilename(), e);
+        }
     }
 
     private String generateSecureFileName(String originalFilename) {
@@ -143,5 +154,44 @@ public class AlbumService {
             return "";
         }
         return filename.substring(dotIndex);
+    }
+
+    @Transactional
+    public Album createAlbumWithPhotos(Album album, MultipartFile[] files) throws IOException {
+        Album savedAlbum = albumRepository.save(album);
+
+        Path uploadPath = Paths.get(this.uploadPath);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+                Path filepath = uploadPath.resolve(filename);
+                Files.copy(file.getInputStream(), filepath, StandardCopyOption.REPLACE_EXISTING);
+
+                Photo photo = new Photo();
+                photo.setAlbum(savedAlbum);
+                photo.setFilePath(filename);
+                photo.setOriginalFileName(file.getOriginalFilename());
+                photo.setFileType(file.getContentType());
+                photo.setSize(file.getSize());
+                photo.setUploadDate(LocalDateTime.now());
+
+                photoRepository.save(photo);
+            }
+        }
+
+        return savedAlbum;
+    }
+
+    public Album findById(Long id) {
+        return albumRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Album not found with id: " + id));
+    }
+
+    public Album save(Album album) {
+        return albumRepository.save(album);
     }
 } 
